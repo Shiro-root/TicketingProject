@@ -1,11 +1,78 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700&display=swap');
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+:root {
+    color-scheme: light;
+}
+
+html.dark {
+    color-scheme: dark;
+}
+
+@layer base {
+    body {
+        @apply bg-surface-soft text-body font-sans antialiased;
+    }
+
+    html.dark body {
+        @apply bg-surface-dark text-on-dark;
+    }
+}
+
+@layer components {
+    /* {component.button-primary} */
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-xs h-10 px-lg rounded-md
+               bg-primary text-white text-button-md transition-colors
+               hover:bg-primary-pressed active:bg-primary-pressed
+               disabled:bg-surface-card disabled:text-ash disabled:cursor-not-allowed;
+    }
+
+    /* {component.button-secondary} */
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-xs h-10 px-lg rounded-md
+               bg-secondary-bg text-on-secondary text-button-md transition-colors
+               hover:bg-secondary-pressed active:bg-secondary-pressed;
+    }
+
+    /* {component.button-tertiary} */
+    .btn-tertiary {
+        @apply inline-flex items-center justify-center gap-xs h-10 px-lg rounded-md
+               bg-transparent text-ink text-button-md hover:bg-surface-card transition-colors;
+    }
+
+    /* {component.text-input} / {component.text-input-focused} */
+    .field-input {
+        @apply w-full h-11 rounded-md border border-ash bg-canvas px-md text-body-md text-ink
+               placeholder:text-ash transition-shadow;
+    }
+
+    .field-input:focus {
+        @apply outline-none border-ink;
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px theme('colors.focus-outer');
+    }
+
+    .field-input.has-error {
+        @apply border-error;
+    }
+
+    .field-label {
+        @apply block text-body-strong text-ink mb-xs;
+    }
+
+    .field-error {
+        @apply mt-xs text-body-sm text-error;
+    }
+
+    /* {component.modal-card} used as the auth card container */
+    .auth-card {
+        @apply w-full max-w-[420px] bg-canvas rounded-lg shadow-modal p-xxl;
+    }
+
+    .link-inline {
+        @apply text-ink-soft text-link-md hover:underline;
+    }
 }
