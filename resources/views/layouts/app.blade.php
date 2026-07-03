@@ -46,14 +46,21 @@
     </header>
 
     <div class="flex">
-        {{-- Sidebar: surface-card chrome, role-aware nav. Modules 3+ fill these in. --}}
+        {{-- Sidebar: surface-card chrome, role-aware nav. --}}
         <aside class="hidden md:flex flex-col w-64 shrink-0 min-h-[calc(100vh-4rem)] bg-surface-card dark:bg-black/20 border-r border-hairline dark:border-white/10 px-md py-lg gap-xxs">
             <a href="{{ route('dashboard') }}"
                class="px-md py-sm rounded-md text-body-strong {{ request()->routeIs('dashboard') ? 'bg-ink text-on-dark' : 'text-ink dark:text-on-dark hover:bg-canvas dark:hover:bg-white/5' }}">
                 Dashboard
             </a>
+
+            {{-- Modul 4: Ticket Management — sudah aktif --}}
+            <a href="{{ route('tickets.index') }}"
+               class="px-md py-sm rounded-md text-body-strong {{ request()->routeIs('tickets.*') ? 'bg-ink text-on-dark' : 'text-ink dark:text-on-dark hover:bg-canvas dark:hover:bg-white/5' }}">
+                Tickets
+            </a>
+
             <span class="mt-md mb-xxs px-md text-caption-md text-ash uppercase tracking-wide">Segera Hadir</span>
-            @foreach (['Tickets', 'Knowledge Base', 'Assets', 'Reports'] as $upcoming)
+            @foreach (['Knowledge Base', 'Assets', 'Reports'] as $upcoming)
                 <span class="px-md py-sm rounded-md text-body-strong text-stone cursor-not-allowed">{{ $upcoming }}</span>
             @endforeach
         </aside>
