@@ -19,12 +19,17 @@
                 <a href="{{ route('assets.edit', $asset) }}" class="btn-secondary">Edit</a>
             @endcan
             @can('delete', $asset)
-                <form method="POST" action="{{ route('assets.destroy', $asset) }}"
-                      onsubmit="return confirm('Hapus asset ini? Bisa dipulihkan lewat menu Restore.');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-tertiary text-error">Hapus</button>
-                </form>
+                <x-confirm-modal
+                    id="delete-asset-{{ $asset->id }}"
+                    title="Hapus Asset?"
+                    description="Asset {{ $asset->asset_tag }} akan dihapus. Anda masih bisa memulihkannya lewat menu Restore."
+                    :action="route('assets.destroy', $asset)"
+                    method="DELETE"
+                    confirmLabel="Ya, Hapus"
+                    confirmClass="btn-primary"
+                    triggerLabel="Hapus"
+                    triggerClass="btn-tertiary text-error"
+                />
             @endcan
         </div>
     </div>
@@ -33,7 +38,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-xl">
         <div class="lg:col-span-2 flex flex-col gap-xl">
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+            <div class="card p-xl">
                 <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Informasi Asset</h2>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-lg text-body-sm">
                     <div><dt class="text-mute mb-xxs">Jenis</dt><dd class="text-ink dark:text-on-dark">{{ $asset->type->label() }}</dd></div>
@@ -57,7 +62,7 @@
             </div>
 
             {{-- Riwayat ticket terkait asset --}}
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+            <div class="card p-xl">
                 <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Ticket Terkait</h2>
                 <div class="flex flex-col gap-md">
                     @forelse ($asset->tickets as $ticket)
@@ -78,7 +83,7 @@
         </div>
 
         <div class="flex flex-col gap-lg">
-            <div class="bg-surface-card dark:bg-white/5 rounded-md p-lg">
+            <div class="bg-surface-card dark:bg-white/[0.04] rounded-md p-lg">
                 <h2 class="text-body-strong text-ink dark:text-on-dark mb-md">Ringkasan</h2>
                 <div class="flex flex-col gap-sm text-body-sm">
                     <div class="flex justify-between"><span class="text-mute">Total Ticket</span><span class="text-ink dark:text-on-dark font-semibold">{{ $asset->tickets->count() }}</span></div>

@@ -40,7 +40,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-xl">
         {{-- Main column --}}
         <div class="lg:col-span-2 flex flex-col gap-xl">
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+            <div class="card p-xl">
                 <h2 class="text-heading-md text-ink dark:text-on-dark mb-md">Deskripsi</h2>
                 <p class="text-body-md text-body dark:text-on-dark-mute whitespace-pre-line">{{ $ticket->description }}</p>
 
@@ -65,7 +65,7 @@
             </div>
 
             {{-- Workflow actions --}}
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+            <div class="card p-xl">
                 <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Aksi Ticket</h2>
                 <div class="flex flex-wrap gap-sm">
                     @if($ticket->assigned_to === auth()->id() && $ticket->status->value === 'assigned')
@@ -110,40 +110,73 @@
                     </form>
 
                     @can('archive', $ticket)
-                        <form method="POST" action="{{ route('tickets.archive', $ticket) }}"
-                              onsubmit="return confirm('Arsipkan ticket ini?');">
-                            @csrf
-                            <button type="submit" class="btn-tertiary">Arsipkan</button>
-                        </form>
+                        <x-confirm-modal
+                            id="archive-ticket-{{ $ticket->id }}"
+                            title="Arsipkan Ticket?"
+                            description="Ticket {{ $ticket->ticket_number }} akan dipindahkan ke arsip."
+                            :action="route('tickets.archive', $ticket)"
+                            method="POST"
+                            confirmLabel="Ya, Arsipkan"
+                            confirmClass="btn-primary"
+                            triggerLabel="Arsipkan"
+                            triggerClass="btn-tertiary"
+                        />
                     @endcan
 
                     @can('delete', $ticket)
-                        <form method="POST" action="{{ route('tickets.destroy', $ticket) }}"
-                              onsubmit="return confirm('Hapus ticket ini? Bisa dipulihkan lewat menu Restore.');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-tertiary text-error">Hapus</button>
-                        </form>
+                        <x-confirm-modal
+                            id="delete-ticket-{{ $ticket->id }}"
+                            title="Hapus Ticket?"
+                            description="Ticket {{ $ticket->ticket_number }} akan dihapus. Anda masih bisa memulihkannya lewat menu Restore."
+                            :action="route('tickets.destroy', $ticket)"
+                            method="DELETE"
+                            confirmLabel="Ya, Hapus"
+                            confirmClass="btn-primary"
+                            triggerLabel="Hapus"
+                            triggerClass="btn-tertiary text-error"
+                        />
                     @endcan
                 </div>
 
                 @can('merge', $ticket)
-                    <form method="POST" action="{{ route('tickets.merge', $ticket) }}"
-                          onsubmit="return confirm('Gabungkan ticket ini ke ticket tujuan? Ticket ini akan diarsipkan.');"
-                          class="flex items-end gap-sm mt-lg pt-lg border-t border-hairline dark:border-white/10">
-                        @csrf
-                        <div class="flex-1 max-w-xs">
-                            <label class="field-label">Gabungkan ke Ticket ID</label>
-                            <input type="number" name="into_id" required placeholder="Masukkan ID ticket tujuan" class="field-input">
+                    {{--
+                        Merge needs a free-text "target ticket id" field submitted together
+                        with the confirmation, so it keeps its own lightweight Alpine confirm
+                        step instead of <x-confirm-modal>, which only wraps @csrf-only forms.
+                    --}}
+                    <div x-data="{ confirmingMerge: false }" class="mt-lg pt-lg border-t border-hairline dark:border-white/10">
+                        <form
+                            method="POST"
+                            action="{{ route('tickets.merge', $ticket) }}"
+                            @submit="if (! confirmingMerge) { $event.preventDefault(); confirmingMerge = true; }"
+                            class="flex items-end gap-sm flex-wrap"
+                        >
+                            @csrf
+                            <div class="flex-1 min-w-[200px] max-w-xs">
+                                <label class="field-label">Gabungkan ke Ticket ID</label>
+                                <input type="number" name="into_id" required placeholder="Masukkan ID ticket tujuan" class="field-input">
+                            </div>
+                            <button type="submit" class="btn-tertiary">Merge</button>
+                        </form>
+
+                        <div x-show="confirmingMerge" x-cloak x-transition.opacity class="modal-scrim" @keydown.escape.window="confirmingMerge = false">
+                            <div class="modal-card" style="max-width: 420px" @click.outside="confirmingMerge = false">
+                                <button type="button" class="modal-close" @click="confirmingMerge = false" aria-label="Tutup">✕</button>
+                                <h2 class="text-heading-lg text-ink dark:text-on-dark mb-xs pr-xl">Gabungkan Ticket?</h2>
+                                <p class="text-body-sm text-mute mb-xl">Ticket {{ $ticket->ticket_number }} akan digabungkan ke ticket tujuan dan diarsipkan.</p>
+                                <div class="flex justify-end gap-sm">
+                                    <button type="button" class="btn-tertiary" @click="confirmingMerge = false">Batal</button>
+                                    <button type="button" class="btn-primary" @click="confirmingMerge = false; $el.closest('[x-data]').querySelector('form').submit()">Ya, Gabungkan</button>
+                                </div>
+                            </div>
                         </div>
-                        <button type="submit" class="btn-tertiary">Merge</button>
-                    </form>
+                    </div>
                 @endcan
             </div>
 
             {{-- Rating (only creator, only when closed) --}}
             @can('rate', $ticket)
-                <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+                <div class="card p-xl">
                     <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Beri Rating</h2>
                     <form method="POST" action="{{ route('tickets.rate', $ticket) }}" class="flex flex-col gap-md max-w-md">
                         @csrf
@@ -162,7 +195,7 @@
             @endcan
 
             {{-- Comments --}}
-            <div id="comments" class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+            <div id="comments" class="card p-xl">
                 <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Diskusi ({{ $comments->count() }})</h2>
 
                 <div class="flex flex-col gap-lg mb-xl">
@@ -178,11 +211,11 @@
                     <textarea name="body" rows="3" required placeholder="Tulis komentar... gunakan @nama untuk mention"
                               class="field-input"></textarea>
                     <input type="file" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.docx,.xlsx,.zip"
-                           class="text-body-sm text-mute file:mr-md file:py-xs file:px-md file:rounded-full file:border-0 file:bg-secondary-bg file:text-body-sm file:text-ink">
-                    <div class="flex items-center justify-between">
+                           class="text-body-sm text-mute file:mr-md file:py-xs file:px-md file:rounded-full file:border-0 file:bg-secondary-bg file:text-body-sm file:text-ink file:cursor-pointer hover:file:bg-secondary-pressed">
+                    <div class="flex items-center justify-between flex-wrap gap-sm">
                         @unless(auth()->user()->hasRole('employee', 'guest'))
                             <label class="flex items-center gap-xs text-body-sm text-mute select-none">
-                                <input type="checkbox" name="is_internal" value="1" class="rounded-sm border-ash">
+                                <input type="checkbox" name="is_internal" value="1">
                                 Catatan internal (tidak terlihat oleh user)
                             </label>
                         @else
@@ -196,7 +229,7 @@
 
         {{-- Sidebar --}}
         <div class="flex flex-col gap-lg">
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-lg">
+            <div class="card p-lg">
                 <h2 class="text-body-strong text-ink dark:text-on-dark mb-md">Informasi</h2>
                 <dl class="flex flex-col gap-sm text-body-sm">
                     <div class="flex justify-between"><dt class="text-mute">Kategori</dt><dd class="text-ink dark:text-on-dark">{{ $ticket->category->name ?? '—' }}</dd></div>
@@ -215,7 +248,7 @@
 
             {{-- Assignment --}}
             @can('assign', $ticket)
-                <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-lg">
+                <div class="card p-lg">
                     <h2 class="text-body-strong text-ink dark:text-on-dark mb-md">Teknisi</h2>
                     @if($ticket->assignee)
                         <div class="flex items-center gap-sm mb-md">
@@ -253,7 +286,7 @@
             @endcan
 
             {{-- Activity timeline --}}
-            <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-lg">
+            <div class="card p-lg">
                 <h2 class="text-body-strong text-ink dark:text-on-dark mb-md">Aktivitas</h2>
                 <div class="flex flex-col">
                     @forelse($ticket->activities as $activity)
