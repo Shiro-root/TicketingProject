@@ -22,6 +22,18 @@
             @case('article-restored')
                 Artikel berhasil dipulihkan.
                 @break
+            @case('asset-created')
+                Asset berhasil ditambahkan.
+                @break
+            @case('asset-updated')
+                Asset berhasil diperbarui.
+                @break
+            @case('asset-deleted')
+                Asset berhasil dihapus.
+                @break
+            @case('asset-restored')
+                Asset berhasil dipulihkan.
+                @break
             @default
                 {{ session('status') }}
         @endswitch

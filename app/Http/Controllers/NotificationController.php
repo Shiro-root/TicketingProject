@@ -8,6 +8,7 @@ use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
+    /** Halaman daftar lengkap notifikasi (di luar dropdown topnav). */
     public function index(Request $request): View
     {
         return view('notifications.index', [

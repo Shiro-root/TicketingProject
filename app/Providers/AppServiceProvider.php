@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Asset;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\Ticket;
+use App\Policies\AssetPolicy;
 use App\Policies\KnowledgeBaseArticlePolicy;
 use App\Policies\TicketPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -24,5 +26,6 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Ticket::class, TicketPolicy::class);
         Gate::policy(KnowledgeBaseArticle::class, KnowledgeBaseArticlePolicy::class);
+        Gate::policy(Asset::class, AssetPolicy::class);
     }
 }

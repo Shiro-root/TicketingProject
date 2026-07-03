@@ -2,33 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\NotificationType;
+use App\Models\NotificationSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
-class NotificationController extends Controller
+class NotificationSettingController extends Controller
 {
-    /** Halaman daftar lengkap notifikasi (di luar dropdown topnav). */
-    public function index(Request $request): View
+    /** Update preferensi in-app/email per tipe notifikasi dari halaman Profil. */
+    public function update(Request $request): RedirectResponse
     {
-        return view('notifications.index', [
-            'notifications' => $request->user()->notifications()->paginate(20),
-        ]);
-    }
+        $user = $request->user();
 
-    /** Tandai satu notifikasi terbaca lalu redirect ke ticket terkait. */
-    public function read(Request $request, string $id): RedirectResponse
-    {
-        $notification = $request->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
+        foreach (NotificationType::cases() as $type) {
+            NotificationSetting::updateOrCreate(
+                ['user_id' => $user->id, 'type' => $type->value],
+                [
+                    'in_app' => $request->boolean("in_app.{$type->value}", true),
+                    'email' => $request->boolean("email.{$type->value}", true),
+                ]
+            );
+        }
 
-        return redirect($notification->data['url'] ?? route('notifications.index'));
-    }
-
-    public function readAll(Request $request): RedirectResponse
-    {
-        $request->user()->unreadNotifications->markAsRead();
-
-        return back();
+        return back()->with('status', 'notification-settings-updated');
     }
 }

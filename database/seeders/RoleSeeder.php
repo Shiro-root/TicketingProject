@@ -37,7 +37,7 @@ class RoleSeeder extends Seeder
         $allPermissions = Permission::pluck('id')->all();
         $ticketOnly = Permission::whereIn('slug', [
             'ticket.view', 'ticket.create', 'ticket.update', 'ticket.assign', 'ticket.close', 'ticket.reopen',
-            'kb.view',
+            'kb.view', 'asset.view',
         ])->pluck('id')->all();
         $viewOwnTicket = Permission::whereIn('slug', ['ticket.view', 'ticket.create', 'kb.view'])->pluck('id')->all();
 
@@ -47,10 +47,11 @@ class RoleSeeder extends Seeder
             UserRole::MANAGER->value => ['name' => 'Manager', 'is_system' => true, 'permissions' => Permission::whereIn('slug', [
                 'ticket.view', 'ticket.view_all', 'ticket.assign', 'ticket.close', 'ticket.reopen', 'ticket.archive',
                 'report.view', 'report.export', 'approval.decide', 'user.view', 'kb.view', 'kb.manage',
+                'asset.view', 'asset.manage',
             ])->pluck('id')->all()],
             UserRole::SUPERVISOR->value => ['name' => 'Supervisor', 'is_system' => true, 'permissions' => Permission::whereIn('slug', [
                 'ticket.view', 'ticket.view_all', 'ticket.assign', 'ticket.close', 'ticket.reopen',
-                'report.view', 'approval.decide', 'kb.view', 'kb.manage',
+                'report.view', 'approval.decide', 'kb.view', 'kb.manage', 'asset.view', 'asset.manage',
             ])->pluck('id')->all()],
             UserRole::TECHNICIAN->value => ['name' => 'Technician', 'is_system' => true, 'permissions' => $ticketOnly],
             UserRole::EMPLOYEE->value => ['name' => 'Employee', 'is_system' => true, 'permissions' => $viewOwnTicket],
