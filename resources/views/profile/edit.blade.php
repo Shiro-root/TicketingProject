@@ -136,5 +136,42 @@
                 </div>
             </form>
         </section>
+
+        {{-- Notification preferences --}}
+<section class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
+    <h2 class="text-heading-md text-ink dark:text-on-dark mb-xxs">Preferensi Notifikasi</h2>
+    <p class="text-body-sm text-mute mb-lg">Atur kanal notifikasi per jenis kejadian.</p>
+
+    <form method="POST" action="{{ route('profile.notifications.update') }}" class="flex flex-col gap-md">
+        @csrf
+        @method('PUT')
+
+        <div class="grid grid-cols-[1fr_auto_auto] gap-md items-center text-body-sm text-mute font-semibold pb-xs border-b border-hairline dark:border-white/10">
+            <span>Jenis Notifikasi</span>
+            <span class="text-center w-16">In-App</span>
+            <span class="text-center w-16">Email</span>
+        </div>
+
+        @php($settings = auth()->user()->notificationSettings->keyBy('type'))
+        @foreach (\App\Enums\NotificationType::cases() as $type)
+            @php($setting = $settings->get($type->value))
+            <div class="grid grid-cols-[1fr_auto_auto] gap-md items-center text-body-sm">
+                <span class="text-ink dark:text-on-dark">{{ $type->icon() }} {{ $type->label() }}</span>
+                <label class="flex justify-center w-16">
+                    <input type="checkbox" name="in_app[{{ $type->value }}]" value="1"
+                           @checked($setting?->in_app ?? true) class="rounded-sm border-ash text-primary">
+                </label>
+                <label class="flex justify-center w-16">
+                    <input type="checkbox" name="email[{{ $type->value }}]" value="1"
+                           @checked($setting?->email ?? true) class="rounded-sm border-ash text-primary">
+                </label>
+            </div>
+        @endforeach
+
+        <div class="pt-md">
+            <button type="submit" class="btn-secondary">Simpan Preferensi</button>
+        </div>
+    </form>
+</section>
     </div>
 @endsection

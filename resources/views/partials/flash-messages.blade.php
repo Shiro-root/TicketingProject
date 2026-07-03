@@ -7,6 +7,9 @@
             @case('password-updated')
                 Kata sandi berhasil diubah.
                 @break
+            @case('notification-settings-updated')
+                Preferensi notifikasi berhasil disimpan.
+                @break
             @default
                 {{ session('status') }}
         @endswitch

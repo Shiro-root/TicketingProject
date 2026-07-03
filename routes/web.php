@@ -11,3 +11,4 @@ Route::middleware('auth')->get('/dashboard', [DashboardController::class, 'index
 
 require __DIR__.'/auth.php';
 require __DIR__.'/tickets.php';
+require __DIR__.'/notifications.php';

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AuditAction;
+use App\Enums\NotificationType;
 use App\Enums\TicketStatus;
 use App\Models\Category;
 use App\Models\Sla;
@@ -12,20 +13,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Business logic untuk siklus hidup Ticket. Controller tidak boleh menyentuh
- * Eloquent langsung untuk operasi tulis — semua lewat service ini supaya
- * status workflow, SLA, dan activity timeline selalu konsisten.
- */
 class TicketService
 {
     public function __construct(
         private readonly TicketActivityService $activity,
         private readonly AuditLogger $auditLogger,
+        private readonly NotificationService $notifications,
     ) {
     }
 
-    /** Generate nomor ticket unik: TCK-{tahun}-{urutan 6 digit}. */
     public function generateTicketNumber(): string
     {
         $year = now()->year;
@@ -78,6 +74,9 @@ class TicketService
                 'subject', 'category_id', 'priority', 'status',
             ]));
 
+            // Trigger: Ticket dibuat — konfirmasi ke pembuat (actor null supaya tidak di-skip self-notify).
+            $this->notifications->send($creator, NotificationType::TICKET_CREATED, $ticket);
+
             return $ticket->fresh();
         });
     }
@@ -95,6 +94,8 @@ class TicketService
                 'department_id' => $data['department_id'] ?? $ticket->department_id,
                 'priority' => $data['priority'] ?? $ticket->priority,
             ]);
+
+            $wasDirty = $ticket->isDirty();
 
             if ($ticket->isDirty('priority')) {
                 $this->activity->priorityChanged($ticket, $actor, $oldPriority->value, $ticket->priority->value);
@@ -120,11 +121,21 @@ class TicketService
                 'subject', 'description', 'category_id', 'priority', 'department_id',
             ]));
 
+            // Trigger: Ticket diupdate — beri tahu stakeholder selain aktor.
+            if ($wasDirty) {
+                $this->notifications->sendToMany(
+                    $this->notifications->stakeholders($ticket),
+                    NotificationType::TICKET_UPDATED,
+                    $ticket,
+                    [],
+                    $actor,
+                );
+            }
+
             return $ticket->fresh();
         });
     }
 
-    /** Assign teknisi utama (juga otomatis pindah status Open -> Assigned). */
     public function assign(Ticket $ticket, User $technician, User $actor, Request $request, bool $isLead = true): Ticket
     {
         return DB::transaction(function () use ($ticket, $technician, $actor, $request, $isLead) {
@@ -152,11 +163,13 @@ class TicketService
                 'assigned_to' => $technician->id,
             ]);
 
+            // Trigger: Ticket diassign — beri tahu teknisi yang ditugaskan.
+            $this->notifications->send($technician, NotificationType::TICKET_ASSIGNED, $ticket, [], $actor);
+
             return $ticket->fresh();
         });
     }
 
-    /** Teknisi menerima ticket yang ditugaskan padanya. */
     public function accept(Ticket $ticket, User $actor): Ticket
     {
         $this->transitionStatus($ticket, TicketStatus::ACCEPTED, $actor);
@@ -167,10 +180,6 @@ class TicketService
         return $ticket->fresh();
     }
 
-    /**
-     * Pindah status sesuai TicketStatus::allowedTransitions(). Melempar
-     * ValidationException kalau transisi tidak diizinkan oleh workflow.
-     */
     public function transitionStatus(Ticket $ticket, TicketStatus $target, User $actor, bool $silent = false): Ticket
     {
         if (! $ticket->canTransitionTo($target)) {
@@ -188,7 +197,6 @@ class TicketService
             default => null,
         };
 
-        // is_sla_breached di-refresh setiap kali status berubah.
         $ticket->is_sla_breached = ! in_array($target, [TicketStatus::RESOLVED, TicketStatus::CLOSED, TicketStatus::ARCHIVED], true)
             && $ticket->due_at && $ticket->due_at->isPast();
 
@@ -196,6 +204,15 @@ class TicketService
 
         if (! $silent) {
             $this->activity->statusChanged($ticket, $actor, $from->label(), $target->label());
+
+            // Trigger: Status berubah — beri tahu creator & watcher.
+            $this->notifications->sendToMany(
+                collect([$ticket->creator])->merge($ticket->watchers)->filter()->unique('id'),
+                NotificationType::STATUS_CHANGED,
+                $ticket,
+                ['from' => $from->label(), 'to' => $target->label()],
+                $actor,
+            );
         }
 
         if ($target === TicketStatus::CLOSED) {
@@ -321,10 +338,6 @@ class TicketService
         return true;
     }
 
-    /**
-     * Simple duplicate-detection: cari ticket lain (status masih terbuka)
-     * dengan subject yang mirip milik user yang sama, dalam 7 hari terakhir.
-     */
     public function findPossibleDuplicates(string $subject, int $creatorId): \Illuminate\Support\Collection
     {
         return Ticket::where('created_by', $creatorId)

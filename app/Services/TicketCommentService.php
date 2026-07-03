@@ -2,16 +2,20 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Ticket;
 use App\Models\TicketComment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TicketCommentService
 {
-    public function __construct(private readonly TicketActivityService $activity)
-    {
+    public function __construct(
+        private readonly TicketActivityService $activity,
+        private readonly NotificationService $notifications,
+    ) {
     }
 
     public function create(Ticket $ticket, User $author, array $data, Request $request): TicketComment
@@ -45,7 +49,28 @@ class TicketCommentService
                 }
             }
 
-            $this->activity->commented($ticket, $author, (bool) ($data['is_internal'] ?? false));
+            $isInternal = (bool) ($data['is_internal'] ?? false);
+            $this->activity->commented($ticket, $author, $isInternal);
+
+            // Trigger: Komentar baru. Catatan internal HANYA memberi tahu sesama staff
+            // (assignee/tim teknisi) — tidak pernah bocor ke Employee/Guest lewat notifikasi.
+            $recipients = $isInternal
+                ? $ticket->technicians->merge([$ticket->assignee])->filter()->unique('id')
+                : collect([$ticket->creator, $ticket->assignee])->filter()->unique('id');
+
+            $this->notifications->sendToMany(
+                $recipients,
+                NotificationType::NEW_COMMENT,
+                $ticket,
+                ['comment_body' => Str::limit($data['body'], 200)],
+                $author,
+            );
+
+            // Trigger: Mention — selalu dikirim ke user yang di-@ (mereka eksplisit ditandai).
+            if ($mentionedIds->isNotEmpty()) {
+                $mentionedUsers = User::whereIn('id', $mentionedIds)->get();
+                $this->notifications->sendToMany($mentionedUsers, NotificationType::MENTIONED, $ticket, [], $author);
+            }
 
             return $comment->fresh(['user', 'attachments', 'mentionedUsers']);
         });
@@ -70,7 +95,6 @@ class TicketCommentService
         $comment->delete();
     }
 
-    /** Cari pola @nama.pengguna / @email dan resolve ke user id yang valid. */
     private function extractMentions(string $body): \Illuminate\Support\Collection
     {
         preg_match_all('/@([\w.\-]+)/', $body, $matches);
@@ -90,7 +114,6 @@ class TicketCommentService
             ->pluck('id');
     }
 
-    /** Comment yang boleh dilihat oleh user sesuai role (internal note disembunyikan dari Employee/Guest). */
     public function visibleFor(Ticket $ticket, User $user)
     {
         $query = $ticket->comments()->with(['user', 'attachments', 'replies.user', 'replies.attachments']);
