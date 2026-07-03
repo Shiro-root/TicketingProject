@@ -14,3 +14,4 @@ require __DIR__.'/tickets.php';
 require __DIR__.'/notifications.php';
 require __DIR__.'/knowledge-base.php';
 require __DIR__.'/assets.php';
+require __DIR__.'/reports.php';
