@@ -84,10 +84,10 @@
 
 @push('scripts')
 <script>
-    // Duplicate-ticket detection & AI Suggested Solution (bonus feature) — debounce saat mengetik.
     (function () {
         const subject = document.getElementById('subject');
         const description = document.getElementById('description');
+        const categorySelect = document.getElementById('category_id');
         const dupBox = document.getElementById('duplicate-warning');
         const kbBox = document.getElementById('kb-suggestions');
         let timer;
@@ -96,7 +96,7 @@
             clearTimeout(timer);
             timer = setTimeout(async () => {
                 const s = subject.value.trim();
-                if (s.length < 8) { dupBox.classList.add('hidden'); return; }
+                if (s.length < 8) { dupBox.classList.add('hidden'); kbBox.classList.add('hidden'); return; }
 
                 try {
                     const res = await fetch('{{ route('tickets.check-duplicates') }}', {
@@ -108,20 +108,45 @@
                         },
                         body: JSON.stringify({ subject: s }),
                     });
-                    if (!res.ok) return;
-                    const data = await res.json();
-
-                    if (data.has_duplicates) {
-                        dupBox.innerHTML = '⚠️ Ditemukan ticket serupa yang baru saja Anda buat: ' +
-                            data.duplicates.map(d => `<a href="${d.url}" class="underline font-semibold">${d.ticket_number}</a>`).join(', ') +
-                            '. Pastikan ini bukan duplikat sebelum melanjutkan.';
-                        dupBox.classList.remove('hidden');
-                    } else {
-                        dupBox.classList.add('hidden');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.has_duplicates) {
+                            dupBox.innerHTML = '⚠️ Ditemukan ticket serupa yang baru saja Anda buat: ' +
+                                data.duplicates.map(d => `<a href="${d.url}" class="underline font-semibold">${d.ticket_number}</a>`).join(', ') +
+                                '. Pastikan ini bukan duplikat sebelum melanjutkan.';
+                            dupBox.classList.remove('hidden');
+                        } else {
+                            dupBox.classList.add('hidden');
+                        }
                     }
                 } catch (e) { /* diamkan — jangan blokir submit form karena AJAX gagal */ }
 
-                // KB Suggested Solution endpoint disiapkan di Modul 6 (Knowledge Base).
+                // AI Suggested Solution — cari artikel KB relevan dari gabungan judul + deskripsi.
+                const combinedText = (s + ' ' + description.value.trim()).trim();
+                if (combinedText.length < 6) { kbBox.classList.add('hidden'); return; }
+
+                try {
+                    const res = await fetch('{{ route('knowledge-base.suggest') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ text: combinedText, category_id: categorySelect.value || null }),
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    if (data.suggestions.length) {
+                        kbBox.innerHTML = '💡 <strong>Mungkin membantu:</strong><ul class="list-disc list-inside mt-xs">' +
+                            data.suggestions.map(a => `<li><a href="${a.url}" target="_blank" class="underline font-semibold">${a.title}</a></li>`).join('') +
+                            '</ul>';
+                        kbBox.classList.remove('hidden');
+                    } else {
+                        kbBox.classList.add('hidden');
+                    }
+                } catch (e) { /* diamkan */ }
             }, 500);
         }
 

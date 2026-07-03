@@ -80,10 +80,17 @@
                 Tickets
             </a>
 
-            <span class="mt-md mb-xxs px-md text-caption-md text-ash uppercase tracking-wide">Segera Hadir</span>
-            @foreach (['Knowledge Base', 'Assets', 'Reports'] as $upcoming)
-                <span class="px-md py-sm rounded-md text-body-strong text-stone cursor-not-allowed">{{ $upcoming }}</span>
-            @endforeach
+          @can('viewAny', \App\Models\KnowledgeBaseArticle::class)
+    <a href="{{ route('knowledge-base.index') }}"
+       class="px-md py-sm rounded-md text-body-strong {{ request()->routeIs('knowledge-base.*') ? 'bg-ink text-on-dark' : 'text-ink dark:text-on-dark hover:bg-canvas dark:hover:bg-white/5' }}">
+        Knowledge Base
+    </a>
+@endcan
+
+<span class="mt-md mb-xxs px-md text-caption-md text-ash uppercase tracking-wide">Segera Hadir</span>
+@foreach (['Assets', 'Reports'] as $upcoming)
+    <span class="px-md py-sm rounded-md text-body-strong text-stone cursor-not-allowed">{{ $upcoming }}</span>
+@endforeach
         </aside>
 
         <main class="flex-1 px-xl py-xl">

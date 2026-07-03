@@ -10,6 +10,18 @@
             @case('notification-settings-updated')
                 Preferensi notifikasi berhasil disimpan.
                 @break
+            @case('article-created')
+                Artikel berhasil dipublikasikan.
+                @break
+            @case('article-updated')
+                Artikel berhasil diperbarui.
+                @break
+            @case('article-deleted')
+                Artikel berhasil dihapus.
+                @break
+            @case('article-restored')
+                Artikel berhasil dipulihkan.
+                @break
             @default
                 {{ session('status') }}
         @endswitch

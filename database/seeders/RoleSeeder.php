@@ -9,10 +9,6 @@ use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
-    /**
-     * Permission groups. Roles get progressively fewer permissions
-     * as they go down the hierarchy — Super Admin gets everything.
-     */
     private array $permissions = [
         'ticket' => ['ticket.view', 'ticket.view_all', 'ticket.create', 'ticket.update', 'ticket.delete',
             'ticket.assign', 'ticket.close', 'ticket.reopen', 'ticket.archive', 'ticket.merge'],
@@ -41,23 +37,24 @@ class RoleSeeder extends Seeder
         $allPermissions = Permission::pluck('id')->all();
         $ticketOnly = Permission::whereIn('slug', [
             'ticket.view', 'ticket.create', 'ticket.update', 'ticket.assign', 'ticket.close', 'ticket.reopen',
+            'kb.view',
         ])->pluck('id')->all();
-        $viewOwnTicket = Permission::whereIn('slug', ['ticket.view', 'ticket.create'])->pluck('id')->all();
+        $viewOwnTicket = Permission::whereIn('slug', ['ticket.view', 'ticket.create', 'kb.view'])->pluck('id')->all();
 
         $roles = [
             UserRole::SUPER_ADMIN->value => ['name' => 'Super Admin', 'is_system' => true, 'permissions' => $allPermissions],
             UserRole::ADMIN->value => ['name' => 'Admin', 'is_system' => true, 'permissions' => $allPermissions],
             UserRole::MANAGER->value => ['name' => 'Manager', 'is_system' => true, 'permissions' => Permission::whereIn('slug', [
                 'ticket.view', 'ticket.view_all', 'ticket.assign', 'ticket.close', 'ticket.reopen', 'ticket.archive',
-                'report.view', 'report.export', 'approval.decide', 'user.view',
+                'report.view', 'report.export', 'approval.decide', 'user.view', 'kb.view', 'kb.manage',
             ])->pluck('id')->all()],
             UserRole::SUPERVISOR->value => ['name' => 'Supervisor', 'is_system' => true, 'permissions' => Permission::whereIn('slug', [
                 'ticket.view', 'ticket.view_all', 'ticket.assign', 'ticket.close', 'ticket.reopen',
-                'report.view', 'approval.decide',
+                'report.view', 'approval.decide', 'kb.view', 'kb.manage',
             ])->pluck('id')->all()],
             UserRole::TECHNICIAN->value => ['name' => 'Technician', 'is_system' => true, 'permissions' => $ticketOnly],
             UserRole::EMPLOYEE->value => ['name' => 'Employee', 'is_system' => true, 'permissions' => $viewOwnTicket],
-            UserRole::GUEST->value => ['name' => 'Guest', 'is_system' => true, 'permissions' => Permission::whereIn('slug', ['ticket.create', 'ticket.view'])->pluck('id')->all()],
+            UserRole::GUEST->value => ['name' => 'Guest', 'is_system' => true, 'permissions' => Permission::whereIn('slug', ['ticket.create', 'ticket.view', 'kb.view'])->pluck('id')->all()],
         ];
 
         foreach ($roles as $slug => $data) {
