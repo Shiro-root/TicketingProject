@@ -1,6 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700&display=swap');
 @import "tailwindcss";
 
+/*
+ * KRITIS: Tailwind v4 defaultnya pakai strategi `prefers-color-scheme` (ikut OS)
+ * untuk semua utility `dark:*`, BUKAN class based, walaupun `tailwind.config.js`
+ * berisi `darkMode: 'class'` — file JS config itu tidak otomatis terbaca di v4
+ * tanpa `@config`. Baris di bawah ini yang membuat `dark:*` benar-benar mengikuti
+ * class `.dark` di <html> (di-toggle oleh window.helpdeskToggleTheme() di layout).
+ * Tanpa baris ini, tombol toggle akan "kelihatan jalan" (cursor/hover berubah)
+ * tapi tidak ada satu warna pun yang berubah — persis gejala yang dilaporkan.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --color-primary: #e60023;
     --color-primary-pressed: #cc001f;
