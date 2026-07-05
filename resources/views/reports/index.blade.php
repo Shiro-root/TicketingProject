@@ -99,11 +99,17 @@
     {{-- Grafik --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
         <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
-            <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Ticket per Status</h2>
+            <div class="flex items-center justify-between mb-lg">
+                <h2 class="text-heading-md text-ink dark:text-on-dark">Ticket per Status</h2>
+                <button type="button" class="btn-tertiary" onclick="downloadReportChart('chartStatus', 'laporan-ticket-per-status.png')">⬇ PNG</button>
+            </div>
             <canvas id="chartStatus" height="220"></canvas>
         </div>
         <div class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
-            <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Ticket per Prioritas</h2>
+            <div class="flex items-center justify-between mb-lg">
+                <h2 class="text-heading-md text-ink dark:text-on-dark">Ticket per Prioritas</h2>
+                <button type="button" class="btn-tertiary" onclick="downloadReportChart('chartPriority', 'laporan-ticket-per-prioritas.png')">⬇ PNG</button>
+            </div>
             <canvas id="chartPriority" height="220"></canvas>
         </div>
     </div>
@@ -207,6 +213,16 @@
             }],
         },
     });
+
+    // Bonus Feature: Export Chart
+    function downloadReportChart(canvasId, filename) {
+        const chart = Chart.getChart(canvasId);
+        if (! chart) return;
+        const link = document.createElement('a');
+        link.href = chart.toBase64Image();
+        link.download = filename;
+        link.click();
+    }
 </script>
 @endpush
 @endsection

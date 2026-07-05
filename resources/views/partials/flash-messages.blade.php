@@ -34,9 +34,48 @@
             @case('asset-restored')
                 Asset berhasil dipulihkan.
                 @break
+            @case('saved-filter-created')
+                Filter berhasil disimpan.
+                @break
+            @case('saved-filter-deleted')
+                Filter tersimpan berhasil dihapus.
+                @break
+            @case('announcement-created')
+                Pengumuman berhasil dipublikasikan.
+                @break
+            @case('announcement-updated')
+                Pengumuman berhasil diperbarui.
+                @break
+            @case('announcement-deleted')
+                Pengumuman berhasil dihapus.
+                @break
+            @case('bulk-action-done')
+                Bulk action selesai dijalankan — lihat ringkasan di bawah.
+                @break
+            @case('report-schedule-created')
+                Jadwal laporan berhasil dibuat.
+                @break
+            @case('report-schedule-updated')
+                Jadwal laporan berhasil diperbarui.
+                @break
+            @case('report-schedule-deleted')
+                Jadwal laporan berhasil dihapus.
+                @break
+            @case('maintenance-enabled')
+                Maintenance Mode diaktifkan.
+                @break
+            @case('maintenance-disabled')
+                Maintenance Mode dinonaktifkan — aplikasi kembali normal.
+                @break
             @default
                 {{ session('status') }}
         @endswitch
+    </div>
+@endif
+
+@if (session('bulk_summary'))
+    <div class="mb-lg rounded-md bg-surface-card dark:bg-white/5 text-ink dark:text-on-dark text-body-sm px-md py-sm">
+        {{ session('bulk_summary') }}
     </div>
 @endif
 

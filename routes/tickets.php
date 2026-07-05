@@ -14,6 +14,9 @@ Route::middleware('auth')->group(function () {
     Route::get('tickets/trashed/list', [TicketController::class, 'trashed'])->name('tickets.trashed');
     Route::post('tickets/check-duplicates', [TicketController::class, 'checkDuplicates'])->name('tickets.check-duplicates');
 
+    // Bonus Feature: Bulk Action — satu aksi untuk banyak ticket sekaligus dari halaman index.
+    Route::post('tickets/bulk', [TicketController::class, 'bulkAction'])->name('tickets.bulk');
+
     Route::resource('tickets', TicketController::class);
 
     Route::prefix('tickets/{ticket}')->name('tickets.')->group(function () {

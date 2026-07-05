@@ -170,43 +170,47 @@
             </form>
         </section>
 
-        {{-- Change password --}}
+       {{-- Change password --}}
 <section class="bg-canvas dark:bg-black/20 rounded-md border border-hairline dark:border-white/10 p-xl">
     <h2 class="text-heading-md text-ink dark:text-on-dark mb-lg">Ubah Kata Sandi</h2>
 
-    <form method="POST" action="{{ route('profile.password.update') }}" class="flex flex-col gap-lg w-full max-w-md">
+    {{-- Perbaikan 1: Pastikan form menggunakan full width dengan flex-col dan gap antar field --}}
+    <form method="POST" action="{{ route('profile.password.update') }}" class="flex flex-col gap-lg w-full max-w-xl">
         @csrf
         @method('PUT')
 
-        <div class="w-full">
-            <label for="current_password" class="field-label">Kata Sandi Saat Ini</label>
+        {{-- Perbaikan 2: Pastikan pembungkus input menggunakan blok penuh (w-full / block) --}}
+        <div class="block w-full">
+            <label for="current_password" class="field-label block mb-xs font-medium text-ink dark:text-on-dark">Kata Sandi Saat Ini</label>
             <input id="current_password" type="password" name="current_password" required
                    autocomplete="current-password"
-                   class="field-input w-full @error('current_password', 'updatePassword') has-error @enderror">
+                   class="field-input w-full block rounded-md border border-hairline px-md py-sm bg-white dark:bg-white/5 text-ink dark:text-on-dark focus:outline-none focus:border-primary @error('current_password', 'updatePassword') has-error @enderror">
             @error('current_password', 'updatePassword')
-                <p class="field-error">{{ $message }}</p>
+                <p class="field-error mt-xs text-sm text-red-500">{{ $message }}</p>
             @enderror
         </div>
 
-        <div class="w-full">
-            <label for="new_password" class="field-label">Kata Sandi Baru</label>
+        <div class="block w-full">
+            <label for="new_password" class="field-label block mb-xs font-medium text-ink dark:text-on-dark">Kata Sandi Baru</label>
             <input id="new_password" type="password" name="password" required
                    autocomplete="new-password"
-                   class="field-input w-full @error('password', 'updatePassword') has-error @enderror">
+                   class="field-input w-full block rounded-md border border-hairline px-md py-sm bg-white dark:bg-white/5 text-ink dark:text-on-dark focus:outline-none focus:border-primary @error('password', 'updatePassword') has-error @enderror">
             @error('password', 'updatePassword')
-                <p class="field-error">{{ $message }}</p>
+                <p class="field-error mt-xs text-sm text-red-500">{{ $message }}</p>
             @enderror
         </div>
 
-        <div class="w-full">
-            <label for="password_confirmation" class="field-label">Konfirmasi Kata Sandi Baru</label>
+        <div class="block w-full">
+            <label for="password_confirmation" class="field-label block mb-xs font-medium text-ink dark:text-on-dark">Konfirmasi Kata Sandi Baru</label>
             <input id="password_confirmation" type="password" name="password_confirmation" required
                    autocomplete="new-password"
-                   class="field-input w-full">
+                   class="field-input w-full block rounded-md border border-hairline px-md py-sm bg-white dark:bg-white/5 text-ink dark:text-on-dark focus:outline-none focus:border-primary">
         </div>
 
-        <div>
-            <button type="submit" class="btn-secondary">Ubah Kata Sandi</button>
+        <div class="pt-sm">
+            <button type="submit" class="btn-secondary px-lg py-md rounded-md bg-ink text-white dark:bg-white dark:text-ink font-medium hover:opacity-90 transition-opacity">
+                Ubah Kata Sandi
+            </button>
         </div>
     </form>
 </section>

@@ -17,10 +17,17 @@ use App\Services\TicketCommentService;
 use App\Services\TicketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class TicketController extends Controller
 {
+    /** Query-string yang dianggap "filter aktif" — dipakai untuk cek apakah perlu redirect ke Saved Filter default. */
+    private const FILTER_KEYS = [
+        'search', 'status', 'priority', 'department_id', 'category_id',
+        'assigned_to', 'sla_breached', 'date_from', 'date_to', 'show_archived',
+    ];
+
     public function __construct(
         private readonly TicketService $tickets,
         private readonly TicketCommentService $comments,
@@ -33,6 +40,17 @@ class TicketController extends Controller
         $this->authorize('viewAny', Ticket::class);
 
         $user = $request->user();
+
+        // Bonus Feature: Saved Filter — kalau user buka halaman ini tanpa filter apapun
+        // dan punya filter default tersimpan, terapkan otomatis.
+        $savedFilters = $user->savedFilters()->latest()->get();
+
+        if (! $request->hasAny(self::FILTER_KEYS)) {
+            $default = $savedFilters->firstWhere('is_default', true);
+            if ($default && ! empty($default->filters)) {
+                return redirect()->route('tickets.index', $default->filters);
+            }
+        }
 
         $query = Ticket::query()->with(['category', 'assignee', 'creator', 'department']);
 
@@ -79,6 +97,7 @@ class TicketController extends Controller
 
         return view('tickets.index', [
             'tickets' => $tickets,
+            'savedFilters' => $savedFilters,
             'categories' => Category::where('is_active', true)->orderBy('name')->get(),
             'departments' => Department::orderBy('name')->get(),
             'technicians' => User::whereHas('role', fn ($r) => $r->whereIn('slug', ['technician', 'supervisor']))->orderBy('name')->get(),
@@ -274,5 +293,62 @@ class TicketController extends Controller
         $this->tickets->toggleBookmark($ticket, $request->user());
 
         return back()->with('status', 'bookmark-toggled');
+    }
+
+    /**
+     * Bonus Feature: Bulk Action.
+     * Menjalankan satu aksi (status / assign / archive / delete) ke banyak ticket
+     * sekaligus. Setiap ticket TETAP melalui pengecekan Policy dan method
+     * TicketService yang sama seperti aksi single-ticket — jadi activity timeline,
+     * notifikasi, dan audit log tetap tercatat normal per ticket. Ticket yang tidak
+     * lolos Policy dilewati (skip), bukan menggagalkan seluruh batch.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:tickets,id'],
+            'bulk_action' => ['required', 'in:status,assign,archive,delete'],
+            'status' => ['required_if:bulk_action,status', 'nullable', 'in:'.implode(',', TicketStatus::values())],
+            'technician_id' => ['required_if:bulk_action,assign', 'nullable', 'exists:users,id'],
+        ]);
+
+        $gate = Gate::forUser($request->user());
+        $action = $data['bulk_action'];
+        $technician = $action === 'assign' ? User::findOrFail($data['technician_id']) : null;
+
+        $success = 0;
+        $skipped = 0;
+
+        foreach (Ticket::whereIn('id', $data['ids'])->get() as $ticket) {
+            $allowed = match ($action) {
+                'status' => $gate->allows('update', $ticket),
+                'assign' => $gate->allows('assign', $ticket),
+                'archive' => $gate->allows('archive', $ticket),
+                'delete' => $gate->allows('delete', $ticket),
+            };
+
+            if (! $allowed) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                match ($action) {
+                    'status' => $this->tickets->transitionStatus($ticket, TicketStatus::from($data['status']), $request->user()),
+                    'assign' => $this->tickets->assign($ticket, $technician, $request->user(), $request),
+                    'archive' => $this->tickets->archive($ticket, $request->user()),
+                    'delete' => $this->tickets->delete($ticket, $request->user(), $request),
+                };
+                $success++;
+            } catch (\Throwable $e) {
+                // Mis. transisi status tidak valid untuk ticket tertentu (lihat TicketStatus::allowedTransitions).
+                $skipped++;
+            }
+        }
+
+        return back()->with('status', 'bulk-action-done')
+            ->with('bulk_summary', "Bulk action selesai: {$success} ticket berhasil, {$skipped} dilewati (tidak diizinkan/tidak valid).");
     }
 }

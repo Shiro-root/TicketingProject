@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\CheckSlaEscalations;
+use App\Console\Commands\SendScheduledReports;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -12,3 +13,7 @@ Artisan::command('inspire', function () {
 // Auto Escalation (SLA) — cek tiap 15 menit, cukup granular tanpa membebani DB.
 // Jalankan `php artisan schedule:work` saat development untuk mensimulasikan cron.
 Schedule::command(CheckSlaEscalations::class)->everyFifteenMinutes();
+
+// Bonus Feature: Scheduled Report — command sendiri yang menentukan jadwal mana
+// yang "due" (lihat ReportSchedule::isDue()), jadi cukup dicek tiap jam.
+Schedule::command(SendScheduledReports::class)->hourly();
