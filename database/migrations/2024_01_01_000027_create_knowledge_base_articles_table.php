@@ -22,7 +22,12 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->fullText(['title', 'content']);
+            // fullText index is MySQL/Postgres-only — this project's default
+            // driver is SQLite (see KnowledgeBaseService::search() for the
+            // matching LIKE-based fallback used on non-MySQL connections).
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $table->fullText(['title', 'content']);
+            }
         });
 
         Schema::create('knowledge_base_article_tag', function (Blueprint $table) {
